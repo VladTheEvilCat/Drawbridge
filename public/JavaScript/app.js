@@ -25,7 +25,7 @@ const db = new sql3.Database('../users.db', (err) => {
 });
 
 //Create the users table
-db.run('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT, lastlogin BIGINT, lastlogout BIGINT)', (err) => {
+db.run('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT, lastlogin BIGINT, lastlogout BIGINT, contacts MEDIUMTEXT)', (err) => {
   if (err)
     return console.error(err.message);
   else
@@ -99,7 +99,7 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/getUser', (req, res) => {
-  db.all('SELECT username, lastlogin, lastlogout FROM users WHERE username=' + req.body.username, [req.body.username], (err, row) => {
+  db.all('SELECT username, lastlogin, lastlogout, contacts FROM users WHERE username=?', [req.body.username], (err, row) => {
     if (err)
       return console.error(err.message);
     else if (row != undefined)
@@ -113,14 +113,12 @@ app.get('/getUser', (req, res) => {
 
 // Using require to access http module
 const http = require("http");
-
-// Port number
-const PORT = process.env.PORT || 5500;
+const PORT = process.env.PORT || 5500; // Port number
 
 // Creating server
 const server = http.createServer(
   // Server listening on port 2020
-  function (req, res) {
+  (req, res) => {
     // Write a response to the client
     res.end();
   }
@@ -180,6 +178,7 @@ function checkCredentials(username, password) {
     console.log('Password check passed!');
     if (username != 0) {
       console.log('attempting to save credentials..');
+      username = username.replaceAll(',','_');
       saveCredentials(username, password);
       return true;
     }
@@ -236,20 +235,12 @@ function checkPWComplexity() {
 
 //--ACTUAL Cookie Stuff--//
 
-function decodeCookie(encodedCookie = '') {
-  return encodedCookie.replace('j', '').replace('%3A', '').replaceAll('%22', '"').replaceAll('%3A', ':').replaceAll('%2C', ',').replaceAll('%7B', '{').replaceAll('%7D', '}').replaceAll('%25', '%');
-}
-function getUsernameFromCookie(decodedCookie = '') {
-  return decodedCookie.slice(6, -1).split(',')[0].slice(12, -1);
-}
-function getLastloginFromCookie(decodedCookie = '') {
-  return decodedCookie.slice(6, -1).split(',')[1].slice(12);
-}
-function getLastlogoutFromCookie(decodedCookie = '') {
-  return decodedCookie.slice(6, -1).split(',')[2].slice(13);
-}
+function decodeCookie(encodedCookie = '') { return encodedCookie.replace('j', '').replace('%3A', '').replaceAll('%22', '"').replaceAll('%3A', ':').replaceAll('%2C', ',').replaceAll('%7B', '{').replaceAll('%7D', '}').replaceAll('%25', '%'); }
+function getUsernameFromCookie(decodedCookie = '') { return decodedCookie.slice(6, -1).split(',')[0].slice(12, -1); }
+function getLastloginFromCookie(decodedCookie = '') { return decodedCookie.slice(6, -1).split(',')[1].slice(12); }
+function getLastlogoutFromCookie(decodedCookie = '') { return decodedCookie.slice(6, -1).split(',')[2].slice(13); }
 
-//--Date Conversions--//
+/*--Date Conversions--*/
 
 // Converts a number of weeks to a date;
 // @Returns this date + (weeks); can be used for expire date;
@@ -259,7 +250,6 @@ function weeksToDate(weeks) {
   return d.toUTCString();
 }
 
-
 // Converts a number of days to a date;
 // @Returns this date + (days); can be used for expire date;
 function daysToDate(days) {
@@ -267,7 +257,6 @@ function daysToDate(days) {
   d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
   return d.toUTCString();
 }
-
 
 // Converts a number of hours to a date;
 // @Returns this date + (hours); can be used for expire date;
@@ -339,3 +328,25 @@ function checkForInvalidUsername() {
         alert('Invalid username: `' + username + '`');
   }
 }
+
+// Checks if a user has this user as a contact
+function checkContact(username){
+  db.get(`SELECT contacts FROM users WHERE username = ?`, [username], (err, row) => {
+    console.log(row);
+    if (err) {
+      console.error(err);
+    } else {
+      if (row) {
+
+        response.cookie("user", {
+          Username: username,
+          LastLogin: currTime,
+          LastLogout: row.lastlogout
+        });
+      } else {
+        console.log('User "'+username+'" not found');
+        // Something else
+      }
+    }
+  });
+} 
