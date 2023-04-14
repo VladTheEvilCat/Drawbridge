@@ -330,23 +330,21 @@ function checkForInvalidUsername() {
 }
 
 // Checks if a user has this user as a contact
-function checkContact(username){
+function isContactOf(username){
+  let isContact = false;
   db.get(`SELECT contacts FROM users WHERE username = ?`, [username], (err, row) => {
     console.log(row);
     if (err) {
       console.error(err);
+    } else if (row) {
+      const contacts = row.split(',');
+      for(const user of contacts)
+        if(user==username)
+          isContact = true;
     } else {
-      if (row) {
-
-        response.cookie("user", {
-          Username: username,
-          LastLogin: currTime,
-          LastLogout: row.lastlogout
-        });
-      } else {
-        console.log('User "'+username+'" not found');
-        // Something else
-      }
+      console.log('User "'+username+'" not found');
+      // Something else
     }
   });
+  return isContact;
 } 

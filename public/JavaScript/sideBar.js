@@ -1,6 +1,5 @@
-
 // used this link for sidebar https://www.w3schools.com/howto/howto_js_collapse_sidebar.asp
-
+// -prob a better way to do this
 /* Set the width of the sidebar to 250px and the left margin of the page content to 250px */
 function openNav() {
   document.getElementById("mySidebar").style.width = "270px";
